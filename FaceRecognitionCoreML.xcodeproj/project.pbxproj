@@ -9,21 +9,24 @@
 /* Begin PBXBuildFile section */
 		E6A7278028FEABB300895A45 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7277F28FEABB300895A45 /* AppDelegate.swift */; };
 		E6A7278228FEABB300895A45 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7278128FEABB300895A45 /* SceneDelegate.swift */; };
-		E6A7278428FEABB300895A45 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7278328FEABB300895A45 /* ViewController.swift */; };
-		E6A7278728FEABB300895A45 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E6A7278528FEABB300895A45 /* Main.storyboard */; };
+		E6A7278428FEABB300895A45 /* FaceRecognitionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7278328FEABB300895A45 /* FaceRecognitionViewController.swift */; };
 		E6A7278928FEABB400895A45 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E6A7278828FEABB400895A45 /* Assets.xcassets */; };
 		E6A7278C28FEABB400895A45 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E6A7278A28FEABB400895A45 /* LaunchScreen.storyboard */; };
+		E6A7279428FEABEF00895A45 /* CounterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7279328FEABEF00895A45 /* CounterView.swift */; };
+		E6A7279728FEAC8800895A45 /* Anchorage in Frameworks */ = {isa = PBXBuildFile; productRef = E6A7279628FEAC8800895A45 /* Anchorage */; };
+		E6AB17662903A177007C5B2E /* matrix_float4x4.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6AB17652903A177007C5B2E /* matrix_float4x4.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		E6A7277C28FEABB300895A45 /* FaceRecognitionCoreML.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FaceRecognitionCoreML.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6A7277F28FEABB300895A45 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E6A7278128FEABB300895A45 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		E6A7278328FEABB300895A45 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		E6A7278628FEABB300895A45 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		E6A7278328FEABB300895A45 /* FaceRecognitionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceRecognitionViewController.swift; sourceTree = "<group>"; };
 		E6A7278828FEABB400895A45 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E6A7278B28FEABB400895A45 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		E6A7278D28FEABB400895A45 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E6A7279328FEABEF00895A45 /* CounterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CounterView.swift; sourceTree = "<group>"; };
+		E6AB17652903A177007C5B2E /* matrix_float4x4.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = matrix_float4x4.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,6 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E6A7279728FEAC8800895A45 /* Anchorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,11 +62,12 @@
 			children = (
 				E6A7277F28FEABB300895A45 /* AppDelegate.swift */,
 				E6A7278128FEABB300895A45 /* SceneDelegate.swift */,
-				E6A7278328FEABB300895A45 /* ViewController.swift */,
-				E6A7278528FEABB300895A45 /* Main.storyboard */,
+				E6A7278328FEABB300895A45 /* FaceRecognitionViewController.swift */,
 				E6A7278828FEABB400895A45 /* Assets.xcassets */,
 				E6A7278A28FEABB400895A45 /* LaunchScreen.storyboard */,
 				E6A7278D28FEABB400895A45 /* Info.plist */,
+				E6A7279328FEABEF00895A45 /* CounterView.swift */,
+				E6AB17652903A177007C5B2E /* matrix_float4x4.swift */,
 			);
 			path = FaceRecognitionCoreML;
 			sourceTree = "<group>";
@@ -83,6 +88,9 @@
 			dependencies = (
 			);
 			name = FaceRecognitionCoreML;
+			packageProductDependencies = (
+				E6A7279628FEAC8800895A45 /* Anchorage */,
+			);
 			productName = FaceRecognitionCoreML;
 			productReference = E6A7277C28FEABB300895A45 /* FaceRecognitionCoreML.app */;
 			productType = "com.apple.product-type.application";
@@ -111,6 +119,9 @@
 				Base,
 			);
 			mainGroup = E6A7277328FEABB300895A45;
+			packageReferences = (
+				E6A7279528FEAC8800895A45 /* XCRemoteSwiftPackageReference "Anchorage" */,
+			);
 			productRefGroup = E6A7277D28FEABB300895A45 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -127,7 +138,6 @@
 			files = (
 				E6A7278C28FEABB400895A45 /* LaunchScreen.storyboard in Resources */,
 				E6A7278928FEABB400895A45 /* Assets.xcassets in Resources */,
-				E6A7278728FEABB300895A45 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,23 +148,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E6A7278428FEABB300895A45 /* ViewController.swift in Sources */,
+				E6A7278428FEABB300895A45 /* FaceRecognitionViewController.swift in Sources */,
 				E6A7278028FEABB300895A45 /* AppDelegate.swift in Sources */,
 				E6A7278228FEABB300895A45 /* SceneDelegate.swift in Sources */,
+				E6A7279428FEABEF00895A45 /* CounterView.swift in Sources */,
+				E6AB17662903A177007C5B2E /* matrix_float4x4.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		E6A7278528FEABB300895A45 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				E6A7278628FEABB300895A45 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		E6A7278A28FEABB400895A45 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -292,7 +296,6 @@
 				INFOPLIST_FILE = FaceRecognitionCoreML/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -320,7 +323,6 @@
 				INFOPLIST_FILE = FaceRecognitionCoreML/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -358,6 +360,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E6A7279528FEAC8800895A45 /* XCRemoteSwiftPackageReference "Anchorage" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Rightpoint/Anchorage";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E6A7279628FEAC8800895A45 /* Anchorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6A7279528FEAC8800895A45 /* XCRemoteSwiftPackageReference "Anchorage" */;
+			productName = Anchorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E6A7277428FEABB300895A45 /* Project object */;
 }
