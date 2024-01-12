@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F7C1A832B5120A8008F47BB /* Models.scnassets in Resources */ = {isa = PBXBuildFile; fileRef = 0F7C1A822B5120A8008F47BB /* Models.scnassets */; };
 		E6A7278028FEABB300895A45 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7277F28FEABB300895A45 /* AppDelegate.swift */; };
 		E6A7278228FEABB300895A45 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7278128FEABB300895A45 /* SceneDelegate.swift */; };
 		E6A7278428FEABB300895A45 /* FaceRecognitionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A7278328FEABB300895A45 /* FaceRecognitionViewController.swift */; };
@@ -18,6 +19,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0F7C1A822B5120A8008F47BB /* Models.scnassets */ = {isa = PBXFileReference; lastKnownFileType = wrapper.scnassets; path = Models.scnassets; sourceTree = "<group>"; };
 		E6A7277C28FEABB300895A45 /* FaceRecognitionCoreML.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FaceRecognitionCoreML.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6A7277F28FEABB300895A45 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E6A7278128FEABB300895A45 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -68,6 +70,7 @@
 				E6A7278D28FEABB400895A45 /* Info.plist */,
 				E6A7279328FEABEF00895A45 /* CounterView.swift */,
 				E6AB17652903A177007C5B2E /* matrix_float4x4.swift */,
+				0F7C1A822B5120A8008F47BB /* Models.scnassets */,
 			);
 			path = FaceRecognitionCoreML;
 			sourceTree = "<group>";
@@ -136,6 +139,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0F7C1A832B5120A8008F47BB /* Models.scnassets in Resources */,
 				E6A7278C28FEABB400895A45 /* LaunchScreen.storyboard in Resources */,
 				E6A7278928FEABB400895A45 /* Assets.xcassets in Resources */,
 			);

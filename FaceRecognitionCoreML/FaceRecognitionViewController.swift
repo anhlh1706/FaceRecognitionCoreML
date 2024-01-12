@@ -11,8 +11,11 @@ import AVKit
 import ARKit
 import AVFoundation
 import Anchorage
+import Combine
+import ImageIO
+import CoreMotion
 
-final class FaceRecognitionViewController: UIViewController {
+final class FaceRecognitionViewController: UIViewController, AVCapturePhotoCaptureDelegate {
     
     // MARK: - IBOutlets
     private var sceneView: ARSCNView!
@@ -22,6 +25,18 @@ final class FaceRecognitionViewController: UIViewController {
     private var backgroundView: UIView!
     
     private var counterView: CounterView!
+    
+    private var ambientIntensityValueLabel: UILabel!
+    
+    private var motionValueLabel: UILabel!
+    
+    private var gyroValueLabel: UILabel!
+    
+    private var magnetometerValueLabel: UILabel!
+    
+    private var rotationRateLabel: UILabel!
+    
+    private var headEulerValueLabel: UILabel!
     
     private var visualEffectView: UIVisualEffectView!
     
@@ -42,48 +57,66 @@ final class FaceRecognitionViewController: UIViewController {
     
     private var innerCircleLayer: CAShapeLayer?
     
-    private var isWaitting = true
+    private let ambientIntensityValue = CurrentValueSubject<String?, Never>("0")
     
-    private var lastFrame: CMSampleBuffer?
+    private let headEuler = CurrentValueSubject<CGPoint, Never>(.zero)
     
-    private lazy var previewOverlayView: UIImageView = {
-        precondition(isViewLoaded)
-        let previewOverlayView = UIImageView(frame: .zero)
-        previewOverlayView.contentMode = .scaleAspectFill
-        previewOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        return previewOverlayView
-    }()
-
-    private lazy var annotationOverlayView: UIView = {
-        precondition(isViewLoaded)
-        let annotationOverlayView = UIView(frame: .zero)
-        annotationOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        return annotationOverlayView
-    }()
+    private var cancellables = [AnyCancellable]()
     
     let defaultRotation: Double = .pi / 2
+    
+    let manager = CMMotionManager()
+    
+    var contentNode: SCNNode?
+    
+    lazy var rightEyeNode = SCNReferenceNode(named: "coordinateOrigin")
+    lazy var leftEyeNode = SCNReferenceNode(named: "coordinateOrigin")
+    
+    let accelerometer = CurrentValueSubject<String?, Never>("")
+    
+    let gyro = CurrentValueSubject<String?, Never>("")
+    
+    let magnetic = CurrentValueSubject<String?, Never>("")
     
     // MARK: - Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        captureSession = AVCaptureSession()
         setupView()
-        view.backgroundColor = .black
+        setUpCaptureSession()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        DispatchQueue.global().async {
-            self.captureSession.startRunning()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [self] in
+            counterView.startScanning()
+            UIView.animate(withDuration: 0.3) {
+                self.visualEffectView.alpha = 0
+            }
         }
-//        createOverlay()
-//        drawCircle()
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        previewOverlayView.alpha = .leastNonzeroMagnitude
-        captureSession.stopRunning()
+        
+        manager.accelerometerUpdateInterval = 0.1
+        
+        manager.startAccelerometerUpdates(to: .main) { (data, error) in
+            let x = data?.acceleration.x ?? 0
+            let y = data?.acceleration.y ??                0
+            let z = data?.acceleration.z ?? 0
+            self.accelerometer.send(String(format: "Accelerometer\n %.2f - x\n %.2f - y\n %.2f - z", x, y, z))
+        }
+        
+        manager.startGyroUpdates(to: .main, withHandler: { data, _ in
+            let x = (data?.rotationRate.x ?? 0)
+            let y = (data?.rotationRate.y ?? 0)
+            let z = (data?.rotationRate.z ?? 0)
+            
+            self.gyro.send(String(format: "Gyro\n%.2f - x\n%.2f - y\n %.2f - z", x, y, z))
+        })
+        
+        manager.startMagnetometerUpdates(to: .main) { data, _ in
+            let x = (data?.magneticField.x ?? 0)
+            let y = (data?.magneticField.y ?? 0)
+            let z = (data?.magneticField.z ?? 0)
+            self.magnetic.send(String(format: "Magnetic field\n%.2f - x\n%.2f - y\n%.2f - z", x, y, z))
+        }
     }
     
     func setupView() {
@@ -97,154 +130,181 @@ final class FaceRecognitionViewController: UIViewController {
         guard ARFaceTrackingConfiguration.isSupported else { return }
         let configuration = ARFaceTrackingConfiguration()
         configuration.isLightEstimationEnabled = true
+        configuration.isWorldTrackingEnabled = true
+        configuration.maximumNumberOfTrackedFaces = 2
         sceneView.session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
         
+        // MARK: - Setup View's Positions
+        cameraView = UIView()
+        view.addSubview(cameraView)
+        cameraView.edgeAnchors == view.edgeAnchors + UIEdgeInsets(top: 60, left: 40, bottom: 200, right: 40)
+
+        backgroundView = UIView()
+        view.addSubview(backgroundView)
+        backgroundView.edgeAnchors == view.edgeAnchors
+
+        counterView = CounterView()
+        backgroundView.addSubview(counterView)
+        counterView.centerXAnchor == backgroundView.centerXAnchor
+        counterView.centerYAnchor == backgroundView.centerYAnchor - 80
+
+        counterView.widthAnchor == backgroundView.widthAnchor
+        counterView.heightAnchor == backgroundView.widthAnchor
+
         verticalOverlayView = UIView()
-        view.addSubview(verticalOverlayView)
-        verticalOverlayView.edgeAnchors == view.edgeAnchors + UIEdgeInsets(top: 200, left: 50, bottom: 200, right: 50)
-        
+        backgroundView.addSubview(verticalOverlayView)
+        verticalOverlayView.edgeAnchors == counterView.edgeAnchors + 50
+
         horizontalOverlayView = UIView()
-        view.addSubview(horizontalOverlayView)
-        horizontalOverlayView.edgeAnchors == view.edgeAnchors + UIEdgeInsets(top: 200, left: 50, bottom: 200, right: 50)
-        
-        
+        backgroundView.addSubview(horizontalOverlayView)
+        horizontalOverlayView.edgeAnchors == counterView.edgeAnchors + 50
+
         verticalOverlayView.layer.transform = CATransform3DMakeRotation(-defaultRotation, 0, 1, 0)
         horizontalOverlayView.layer.transform = CATransform3DMakeRotation(defaultRotation, 1, 0, 0)
-        
-        // MARK: - Setup View's Positions
-//        cameraView = UIView()
-//        view.addSubview(cameraView)
-//        cameraView.edgeAnchors == view.edgeAnchors + UIEdgeInsets(top: 60, left: 40, bottom: 200, right: 40)
-//        cameraView.addSubview(previewOverlayView)
-//        previewOverlayView.edgeAnchors == cameraView.edgeAnchors
-//
-//        cameraView.addSubview(annotationOverlayView)
-//        annotationOverlayView.edgeAnchors == cameraView.edgeAnchors
-//
-//        backgroundView = UIView()
-//        view.addSubview(backgroundView)
-//        backgroundView.edgeAnchors == view.edgeAnchors
-//
-//        counterView = CounterView()
-//        backgroundView.addSubview(counterView)
-//        counterView.centerXAnchor == backgroundView.centerXAnchor
-//        counterView.centerYAnchor == backgroundView.centerYAnchor - 80
-//
-//        counterView.widthAnchor == backgroundView.widthAnchor
-//        counterView.heightAnchor == backgroundView.widthAnchor
-//
-//        visualEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .regular))
-//
-//        backgroundView.addSubview(visualEffectView)
-//        visualEffectView.edgeAnchors == backgroundView.edgeAnchors
-//
-//        overlayView = UIView(frame: backgroundView.frame)
-//
-//        // MARK: - Setup View's Properties
-//        counterView.layer.zPosition = 3000
-//
-//        visualEffectView.alpha = 0
-    }
-    
-    // bắt đầu quét lại
-    func refreshScan() {
-        counterView.removeAllActiveFaces()
-        detects.removeAll()
-    }
-    
-    func okUI(point: CGPoint) {
-        func deg2rad(_ number: Double) -> Double {
-            return number * .pi / 180
-        }
-        
-//        let translationX = deg2rad(max(-50, min((point.x + 20) * 2, 50))) + defaultRotation
-//        let transformX = CATransform3DMakeRotation(translationX, 1, 0, 0)
-        
-//        print(point.y)
-        let translationY = deg2rad(max(-50, min(point.y, 50))) - defaultRotation
-        let transformY = CATransform3DMakeRotation(translationY, 0, 1, 0)
-        
-        DispatchQueue.main.async { [self] in
-            UIView.animate(withDuration: 0.4, delay: 0, options: .curveEaseInOut, animations: { [self] in
-//                horizontalOverlayView.layer.transform = transformX
-                verticalOverlayView.layer.transform = transformY
-                horizontalOverlayView.layoutIfNeeded()
-            })
-        }
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor.green.withAlphaComponent(0.3).cgColor]
-        gradientLayer.locations = [0.0 , 0.65, 1]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint = CGPoint(x: 0, y: 1)
-        gradientLayer.frame = horizontalOverlayView.bounds
-        gradientLayer.cornerRadius = 150
-        horizontalOverlayView.layer.insertSublayer(gradientLayer, at: 0)
-        
-        let gradientLayer2 = CAGradientLayer()
-        gradientLayer2.colors = [UIColor.clear.cgColor, UIColor.clear.cgColor, UIColor.green.withAlphaComponent(0.3).cgColor]
-        gradientLayer2.locations = [0.0 , 0.65, 1]
-        gradientLayer2.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer2.endPoint = CGPoint(x: 1, y: 0)
-        gradientLayer2.frame = verticalOverlayView.bounds
-        gradientLayer2.cornerRadius = 150
-        verticalOverlayView.layer.insertSublayer(gradientLayer2, at: 0)
-    }
 
+        ambientIntensityValueLabel = UILabel()
+        backgroundView.addSubview(ambientIntensityValueLabel)
+        ambientIntensityValueLabel.topAnchor == backgroundView.safeAreaLayoutGuide.topAnchor + 10
+        ambientIntensityValueLabel.trailingAnchor == backgroundView.trailingAnchor - 4
+
+        motionValueLabel = UILabel()
+        backgroundView.addSubview(motionValueLabel)
+        motionValueLabel.topAnchor == ambientIntensityValueLabel.bottomAnchor + 10
+        motionValueLabel.trailingAnchor == backgroundView.trailingAnchor - 4
+
+        gyroValueLabel = UILabel()
+        backgroundView.addSubview(gyroValueLabel)
+        gyroValueLabel.topAnchor == motionValueLabel.bottomAnchor + 10
+        gyroValueLabel.trailingAnchor == backgroundView.trailingAnchor - 4
+        
+        magnetometerValueLabel = UILabel()
+        backgroundView.addSubview(magnetometerValueLabel)
+        magnetometerValueLabel.topAnchor == gyroValueLabel.bottomAnchor + 10
+        magnetometerValueLabel.trailingAnchor == backgroundView.trailingAnchor - 4
+        
+        rotationRateLabel = UILabel()
+        backgroundView.addSubview(rotationRateLabel)
+        rotationRateLabel.topAnchor == magnetometerValueLabel.bottomAnchor + 10
+        rotationRateLabel.trailingAnchor == backgroundView.trailingAnchor - 4
+
+        headEulerValueLabel = UILabel()
+        backgroundView.addSubview(headEulerValueLabel)
+        headEulerValueLabel.topAnchor == rotationRateLabel.bottomAnchor + 10
+        headEulerValueLabel.trailingAnchor == backgroundView.trailingAnchor - 4
+
+        visualEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .regular))
+
+        backgroundView.addSubview(visualEffectView)
+        visualEffectView.edgeAnchors == backgroundView.edgeAnchors
+
+        overlayView = UIView(frame: backgroundView.frame)
+
+        // MARK: - Setup View's Properties
+        counterView.layer.zPosition = 3000
+        counterView.alpha = .leastNonzeroMagnitude
+        visualEffectView.alpha = 0
+        
+        motionValueLabel.numberOfLines = 0
+        
+        [headEulerValueLabel, rotationRateLabel, gyroValueLabel, motionValueLabel, ambientIntensityValueLabel, magnetometerValueLabel].forEach {
+            $0?.font = .systemFont(ofSize: 12)
+            $0?.textColor = .green
+            $0?.numberOfLines = 0
+            $0?.textAlignment = .right
+        }
+        
+        ambientIntensityValue
+            .throttle(for: .seconds(0.1), scheduler: DispatchQueue.main, latest: true)
+            .map({ "Lux: \($0 ?? "")" })
+            .assign(to: \.text, on: ambientIntensityValueLabel)
+            .store(in: &cancellables)
+        
+        accelerometer
+            .throttle(for: .seconds(0.1), scheduler: DispatchQueue.main, latest: true)
+            .assign(to: \.text, on: motionValueLabel)
+            .store(in: &cancellables)
+        
+        gyro
+            .throttle(for: .seconds(0.1), scheduler: DispatchQueue.main, latest: true)
+            .assign(to: \.text, on: gyroValueLabel)
+            .store(in: &cancellables)
+        
+        gyro
+            .throttle(for: .seconds(0.1), scheduler: DispatchQueue.main, latest: true)
+            .assign(to: \.text, on: gyroValueLabel)
+            .store(in: &cancellables)
+        
+        magnetic
+            .throttle(for: .seconds(0.1), scheduler: DispatchQueue.main, latest: true)
+            .assign(to: \.text, on: magnetometerValueLabel)
+            .store(in: &cancellables)
+        
+//        headEuler.throttle(for: .seconds(0.05), scheduler: DispatchQueue.main, latest: true)
+//            .map({ String(format: "Head euler: x %.2f, y %.2f", $0.x, $0.y) })
+//            .assign(to: \.text, on: headEulerValueLabel)
+//            .store(in: &cancellables)
+    }
+    
 }
 
 extension FaceRecognitionViewController: ARSCNViewDelegate {
     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        guard let device = sceneView.device else { return nil }
-        let faceGeometry = ARSCNFaceGeometry(device: device)
+//        guard let device = sceneView.device else { return nil }
+//        let faceGeometry = ARSCNFaceGeometry(device: device)
+//        let node = SCNNode(geometry: faceGeometry)
+//
+//        let notez = SCNReferenceNode(named: "coordinateOrigin")
+//        node.addChildNode(notez)
+//        return node
         
-        let node = SCNNode(geometry: faceGeometry)
-        node.geometry?.firstMaterial?.fillMode = .lines
+        let faceGeometry = ARSCNFaceGeometry(device: sceneView.device!)!
+        let material = faceGeometry.firstMaterial!
+
+        material.diffuse.contents = #imageLiteral(resourceName: "wireframeTexture") // Example texture map image.
+        material.lightingModel = .constant
+
+
+        let notez = SCNReferenceNode(named: "coordinateOrigin")
+        let note = SCNNode(geometry: faceGeometry)
+        note.addChildNode(notez)
         
-        return node
+        rightEyeNode.simdPivot = float4x4(diagonal: [3, 3, 3, 1])
+        leftEyeNode.simdPivot = float4x4(diagonal: [3, 3, 3, 1])
+        
+        note.addChildNode(rightEyeNode)
+        note.addChildNode(leftEyeNode)
+
+        return note
     }
     
     func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        ambientIntensityValue.send(String(Int(sceneView.session.currentFrame?.lightEstimate?.ambientIntensity ?? 0)))
         guard let faceAnchor = anchor as? ARFaceAnchor,
               let faceGeometry = node.geometry as? ARSCNFaceGeometry else {
             return
         }
         faceGeometry.update(from: faceAnchor.geometry)
-        let eulerAngles = faceAnchor.transform.translation
-        okUI(point: CGPoint(x: CGFloat(eulerAngles.y), y: CGFloat(eulerAngles.x)))
+        rightEyeNode.simdTransform = faceAnchor.rightEyeTransform
+        leftEyeNode.simdTransform = faceAnchor.leftEyeTransform
+        
+        headEuler.send(CGPoint(x: CGFloat(-faceAnchor.transform.eulerAngles.y), y: CGFloat(faceAnchor.transform.eulerAngles.z)))
     }
 }
 
 
 private extension FaceRecognitionViewController {
 
-    func setUpCaptureSessionOutput() {
-        captureSession.beginConfiguration()
-        captureSession.sessionPreset = .high
-        let output = AVCaptureVideoDataOutput()
-        output.videoSettings = [ (kCVPixelBufferPixelFormatTypeKey as String): kCVPixelFormatType_32BGRA ]
-        output.alwaysDiscardsLateVideoFrames = true
-        guard captureSession.canAddOutput(output) else {
+    func setUpCaptureSession() {
+        guard let device = captureDevice(forPosition: .front),
+              let camera = AVCaptureDevice.default(for: .video) else {
             return
         }
-        captureSession.addOutput(output)
-        captureSession.commitConfiguration()
-    }
-
-    func setUpCaptureSessionInput() {
+        captureDevice?.isFocusModeSupported(.continuousAutoFocus)
+        
+        captureSession = AVCaptureSession()
+            
+        // Config input / output
         DispatchQueue.global().async { [self] in
-            guard let device = captureDevice(forPosition: .front) else {
-                return
-            }
-            
-            guard let camera = AVCaptureDevice.default(for: .video) else { return }
-            captureDevice = camera
-            captureDevice?.isFocusModeSupported(.continuousAutoFocus)
-            
             do {
                 try captureDevice?.lockForConfiguration()
                 captureDevice?.focusMode = .continuousAutoFocus
@@ -262,7 +322,19 @@ private extension FaceRecognitionViewController {
             }
             captureSession.addInput(input)
             captureSession.addOutput(photoOutput)
+            
+            
+            captureSession.sessionPreset = .high
+            let output = AVCaptureVideoDataOutput()
+            output.videoSettings = [ (kCVPixelBufferPixelFormatTypeKey as String): kCVPixelFormatType_32BGRA ]
+            output.alwaysDiscardsLateVideoFrames = true
+            guard captureSession.canAddOutput(output) else {
+                return
+            }
+            captureSession.addOutput(output)
             captureSession.commitConfiguration()
+            
+            captureSession.startRunning()
         }
     }
 
@@ -274,46 +346,43 @@ private extension FaceRecognitionViewController {
         )
         return discoverySession.devices.first(where: { $0.position == position })
     }
-                                        
-    func createOverlay() {
-        overlayView.backgroundColor = UIColor.black
-        
-        let path = CGMutablePath()
-        path.addArc(center: CGPoint(x: counterView.frame.midX, y: counterView.frame.midY),
-                    radius: counterView.frame.size.height / 2 - 65,
-                    startAngle: 0,
-                    endAngle: 2 * .pi,
-                    clockwise: false)
-        path.addRect(CGRect(origin: .zero, size: backgroundView.frame.size))
-        
-        let maskLayer = CAShapeLayer()
-        maskLayer.backgroundColor = UIColor.black.cgColor
-        maskLayer.path = path
-        maskLayer.fillRule = .evenOdd
-        
-        overlayView.layer.mask = maskLayer
-        overlayView.clipsToBounds = true
-        backgroundView.addSubview(overlayView)
-        overlayView.edgeAnchors == backgroundView.edgeAnchors
-    }
-
-    func drawCircle() {
-        let circlePath = UIBezierPath(
-            arcCenter: counterView.center,
-            radius: counterView.frame.size.height / 2 - 55,
-            startAngle: 0,
-            endAngle: 2 * .pi,
-            clockwise: true)
-        
-        let shapeLayer = CAShapeLayer()
-        innerCircleLayer = shapeLayer
-        shapeLayer.path = circlePath.cgPath
-        
-        shapeLayer.fillColor = UIColor.clear.cgColor
-        shapeLayer.strokeColor = UIColor.white.cgColor
-        shapeLayer.lineWidth = 2
-        
-        backgroundView.layer.addSublayer(shapeLayer)
-    }
     
+}
+
+extension FaceRecognitionViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let imageData = photo.fileDataRepresentation() else { return }
+        guard let image = UIImage(data: imageData) else { return }
+        
+        print(image.getExifData()!)
+    }
+}
+
+extension UIImage {
+
+    func getExifData() -> CFDictionary? {
+        var exifData: CFDictionary? = nil
+        if let data = self.jpegData(compressionQuality: 1.0) {
+            data.withUnsafeBytes {
+                let bytes = $0.baseAddress?.assumingMemoryBound(to: UInt8.self)
+                if let cfData = CFDataCreate(kCFAllocatorDefault, bytes, data.count),
+                    let source = CGImageSourceCreateWithData(cfData, nil) {
+                    exifData = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+                }
+            }
+        }
+        return exifData
+    }
+}
+
+
+extension SCNReferenceNode {
+    convenience init(named resourceName: String, loadImmediately: Bool = true) {
+        let url = Bundle.main.url(forResource: resourceName, withExtension: "scn", subdirectory: "Models.scnassets")!
+        self.init(url: url)!
+        if loadImmediately {
+            self.load()
+        }
+    }
 }
